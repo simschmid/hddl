@@ -74,7 +74,7 @@ class Downloader:
         """
         self._prepare()
         self._download_raw()
-        if verbose: print "Downloaded %f MB"%(self.size/2**20)
+        if verbose: print "Downloaded %f MB"%(1.*self.size/2**20)
         self._parse_data(freq)
         return self.data
 def download(pair,fro, to,dest,freq='5s'):
