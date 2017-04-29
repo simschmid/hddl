@@ -19,24 +19,27 @@ def parse_date(s): return DT.strptime(s+'000',"%Y%m%d %H%M%S%f")
 
 
 class Downloader:
-    def __init__(self,pair,year,month,freq='5s'):
+    def __init__(self,pair,year,month,freq='5s',verbose=1):
         """
         The forexdownloader Object is capable of downloading tick data of one Month 
         and to convert it to the desired frequency.
-        @param pair (str):    the currency pair to download eg. EURUSD, USDNZD, ...
-        @param year (int):    the year of interest
-        @param month (int):   the month of interesr (1-12)
-        @param freq (int):    frequency of candledata in seconds
+        :param str pair:    the currency pair to download eg. EURUSD, USDNZD, ...
+        :param year (int):    the year of interest
+        :param month (int):   the month of interesr (1-12)
+        :param freq (int):    frequency of candledata in seconds
         
-        @method download:   starts the download and returns a pandas.DataFrame
+        :method download:   starts the download and returns a pandas.DataFrame
                             with columns (open, close, high low) indexed by date. 
         
         """
+        
         self.url=URL_TEMPLATE.format(pair=pair,year=year,month=month)
         s=self.session=Session()
         self.year,self.month,self.pair=year,month,pair
         self.freq=freq
+        self.verbose=verbose
     def _prepare(self):
+        
         r=self.session.get(self.url)
         m=re.search('id="tk" value="(.*?)"',r.text)
         tk=m.groups()[0]
@@ -45,8 +48,15 @@ class Downloader:
         headers={'Referer':self.url}
         data={'tk':self.tk,'date':self.year,'datemonth':"%d%02d"%(self.year,self.month),'platform':'ASCII','timeframe':'T','fxpair':self.pair}
         r=self.session.request(DOWNLOAD_METHOD,DOWNLOAD_URL,data=data,headers=headers,stream=True)
-        self.size=len(r.content)
-        zf=zipfile.ZipFile(BytesIO(r.content) )
+        bio=BytesIO()
+        size=0
+        for chunk in r.iter_content(chunk_size=2**10):
+            bio.write(chunk)
+            size+=len(chunk)
+            if self.verbose==1:print "Downloaded %.2f kB\r"%(1.*size/2**10)
+        
+        self.size=size
+        zf=zipfile.ZipFile(bio)#BytesIO(r.content) )
         self.file=zf.open(zf.namelist()[0])
         
     def _parse_data(self,freq='5s'):
@@ -66,21 +76,22 @@ class Downloader:
         
         return data
     
-    def download(self,freq="5s",verbose=1):
+    def download(self,freq="5s",verbose=None):
         """
         starts the download.
         @return:    a pandas.DataFrame with columns (open, close, high low) indexed
                     by date
         """
         self._prepare()
+        self.verbose=verbose or self.verbose
         self._download_raw()
-        if verbose: print "Downloaded %f MB"%(1.*self.size/2**20)
+        if self.verbose: print "Downloaded %f MB"%(1.*self.size/2**20)
         self._parse_data(freq)
         return self.data
 def download(pair,fro, to,dest,freq='5s'):
     """
     download tickdata of "pair" from "fro" until "to" and save as file "dest"
-    @param fro (str):   a datetime string like YYYY-MM 
+    :param str fro:   a datetime string like YYYY-MM 
     @param to (str):    a datetime string like YYYY-MM 
     @param dest (str):  path to destination file
     @param freq (int):  duration of candles
@@ -105,7 +116,7 @@ def download(pair,fro, to,dest,freq='5s'):
     data=None
     save_header=True
     for m in range(n_months+1):
-        df=Downloader(pair, year, month).download(freq)
+        df=Downloader(pair, year, month,verbose=1).download(freq)
         #data=df if data is None else data.append(df)
         print "processing %d-%02d"%(year,month)
         df.to_csv(f,mode='a',header=save_header)
