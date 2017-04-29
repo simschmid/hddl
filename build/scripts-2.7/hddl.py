@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/python
 
 '''
 Created on 20.04.2017
