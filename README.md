@@ -15,5 +15,5 @@ The data becomes saved as csv with each row as (date, open, close, high ,low)
 
 One may import the Downloader class
 
-from hddl.hddl import Download
-data=Download(pair,year,month,freq='5s',verbose=1).download()
+    from hddl.hddl import Download  
+    data=Download(pair,year,month,freq='5s',verbose=1).download()
