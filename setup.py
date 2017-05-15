@@ -5,6 +5,6 @@ setup(
     name='hddl',
     description='Downloader and converter for histdata.com',
     version="0.1",
-    scripts=['hddl/hddl.py'],
+    scripts=['hddl.py'],
     packages=['hddl']
         )

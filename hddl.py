@@ -131,7 +131,7 @@ def download(pair,fro, to,dest,freq='5s'):
             month=1
             year+=1
 
-from candles import CandleStorage2
+from hddl.candles import CandleStorage2
 def convert_csv_sqlite(i,o,name,chunksize=4096):
     import sqlite3
     con=sqlite3.connect(o)
