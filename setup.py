@@ -6,5 +6,5 @@ setup(
     description='Downloader and converter for histdata.com',
     version="0.2",
     scripts=['hddl.py'],
-    packages=['hddl']
+    packages=['scripts/hddl']
         )
