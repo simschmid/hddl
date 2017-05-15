@@ -10,7 +10,7 @@ import zipfile,re,argparse,sys
 from requests import Session
 from datetime import datetime as DT
 from io import BytesIO
-
+import hddl
 
 URL_TEMPLATE='http://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/{pair}/{year}/{month}'
 DOWNLOAD_URL="http://www.histdata.com/get.php"
