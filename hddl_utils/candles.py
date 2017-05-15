@@ -308,7 +308,7 @@ class CandleStorage2():
         """.format(tn=self.tablename))
         c.execute("CREATE UNIQUE INDEX IF NOT EXISTS {tn}_index on {tn} (date)".format(tn=self.tablename))
         self.conn.commit()
-        self.len=c.execute("select count(*) from stock").fetchone()[0]
+        self.len=c.execute("select count(*) from {tn}".format(tn=self.tablename)).fetchone()[0]
         
     def clear(self):
         '''
