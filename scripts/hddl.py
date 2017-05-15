@@ -10,7 +10,8 @@ import zipfile,re,argparse,sys
 from requests import Session
 from datetime import datetime as DT
 from io import BytesIO
-import hddl
+from hddl_utils.candles import CandleStorage2 
+
 
 URL_TEMPLATE='http://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/{pair}/{year}/{month}'
 DOWNLOAD_URL="http://www.histdata.com/get.php"
@@ -131,7 +132,7 @@ def download(pair,fro, to,dest,freq='5s'):
             month=1
             year+=1
 
-from hddl.candles import CandleStorage2
+#from hddl.candles import CandleStorage2
 def convert_csv_sqlite(i,o,name,chunksize=4096):
     import sqlite3
     con=sqlite3.connect(o)
