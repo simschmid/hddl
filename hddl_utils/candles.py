@@ -268,7 +268,7 @@ class CandleStorage2():
         '''
         if self.tid==threading.current_thread().ident: return self._conn
         return sqlite3.connect(self._name)
-    def append(self,df):
+    def append(self,df,update=True):
         '''
         :param pd.DataFrame df: a Pandas Datafram to append
         '''
@@ -277,7 +277,8 @@ class CandleStorage2():
         c=conn.cursor()
         #idx=df.index
         #self.last_saved_idx=idx[-1]
-        
+        op='insert'
+        if update: op='replace'
         if not isinstance(df, pd.DataFrame):
             df=pd.DataFrame(list(df),columns=['date',"open","close",'high','low'])
             df=(df.set_index('date')*1e-6).reset_index()
@@ -286,7 +287,7 @@ class CandleStorage2():
         date=df.date
         if isinstance(df.date.iloc[0],dt): date=df.date.map(dt_to_int)
         vals=np.array([date,df.open,df.close,df.high,df.low]).T
-        c.executemany("replace into {tn}  values (?,?,?,?,?)".format(tn=self.tablename), vals)
+        c.executemany(op+" into {tn}  values (?,?,?,?,?)".format(tn=self.tablename), vals)
         self.len+=len(df)
         conn.commit()
     def create_table(self):
