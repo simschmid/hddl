@@ -157,7 +157,7 @@ def download(pair,fro, to,dest,freq='5s',update=True):
     print "downloading range:",daterange
     f=open(dest,'a' if file_exists else 'w')
     for date in daterange:
-        year=date.year
+        year=date.year 
         month=date.month
         df=Downloader(pair, year, month,verbose=1,freq=freq).download()
         #data=df if data is None else data.append(df)
