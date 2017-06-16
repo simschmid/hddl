@@ -10,6 +10,7 @@ import zipfile,re,argparse,sys
 from requests import Session
 from datetime import datetime as DT
 from io import BytesIO
+from hddl_utils.candles import CandleStorage2 
 
 
 URL_TEMPLATE='http://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/{pair}/{year}/{month}'
@@ -131,6 +132,22 @@ def download(pair,fro, to,dest,freq='5s'):
             month=1
             year+=1
 
+#from hddl.candles import CandleStorage2
+def convert_csv_sqlite(i,o,name,chunksize=4096):
+    import sqlite3
+    con=sqlite3.connect(o)
+    data=pd.read_csv(i,memory_map=True,index_col=[0],header=None,names="open close high low".split(),
+                         parse_dates=True,
+                         skiprows=10,
+                         infer_datetime_format=True,
+                         #nrows=1000000,
+                         chunksize=chunksize
+                        )
+    cs=CandleStorage2(name=data.db,tablename=name)
+    for df in data:
+        cs.append(df)
+        #df.to_sql(name,con,if_exists='append')
+    
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="""
     Download historical forexdata from histdata.com. The downloaded
@@ -153,6 +170,10 @@ if __name__ == '__main__':
     parser.add_argument("-o",'--output', type=str,
                         help='Output file. Defaults to "out.csv".',
                         default='out.csv')
+    parser.add_argument('-convert_to_sql',
+                        help="if set all files matched will be converted into one single sqlfile out")
+    parser.add_argument('-names',default=None,nargs='*',
+                        help="specify sql table name, if ommited use the basenames of found files")
     args=vars(parser.parse_args())
     print """
     Start downloading of {pair} from {from} to {to}.

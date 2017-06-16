@@ -10,7 +10,6 @@ import zipfile,re,argparse,sys
 from requests import Session
 from datetime import datetime as DT
 from io import BytesIO
-from hddl_utils.candles import CandleStorage2 
 
 
 URL_TEMPLATE='http://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/{pair}/{year}/{month}'
@@ -94,21 +93,7 @@ class Downloader:
         if self.verbose: print "Downloaded %f MB"%(1.*self.size/2**20)
         self._parse_data(freq)
         return self.data
-    
-    
-def add_month(date,n=1):
-    '''
-    Adds n months to datetime
-    :param pd.datetime date:
-    :param int n:  
-    '''
-    oldy=date.year
-    oldm=date.month
-    y=oldy+(oldm+n-1)/12
-    m=(oldm+n-1)%12+1
-    return pd.datetime(year=y,month=m,day=1)
-
-def download(pair,fro, to,dest,freq='5s',update=True):
+def download(pair,fro, to,dest,freq='5s'):
     """
     download tickdata of "pair" from "fro" until "to" and save as file "dest"
     :param str fro:   a datetime string like YYYY-MM 
@@ -132,41 +117,21 @@ def download(pair,fro, to,dest,freq='5s',update=True):
     
     year=fro.year
     month=fro.month
-    daterange=pd.date_range(fro, to, freq='M')
+    f=open(dest,'w')
     data=None
     save_header=True
-    file_exists=False
-    if update:
-        try:
-            f=open(dest)
-            data=pd.read_csv(dest,memory_map=True,index_col=[0],header=None,names="open close high low".split(),
-                     parse_dates=True,
-                     skiprows=10,
-                     infer_datetime_format=True,
-                     #nrows=1000000
-                    )
-            data.index=data.index.tz_localize('UTC').tz_convert('EST').tz_localize(None)
-            
-            r1=pd.date_range(fro, data.index[0] , freq='M')
-            r2=pd.date_range(add_month(data.index[-1]),to,freq='M')
-            daterange=r1.append(r2)
-            file_exists=True
-            save_header=False
-        except IOError: pass
-    
-    print "downloading range:",daterange
-    f=open(dest,'a' if file_exists else 'w')
-    for date in daterange:
-        year=date.year
-        month=date.month
+    for m in range(n_months+1):
         df=Downloader(pair, year, month,verbose=1,freq=freq).download()
         #data=df if data is None else data.append(df)
         print "processing %d-%02d"%(year,month)
         df.to_csv(f,mode='a',header=save_header)
         save_header=False
-    f.close()
+        month+=1
+        if month>12:
+            month=1
+            year+=1
 
-#from hddl.candles import CandleStorage2
+from candles import CandleStorage2
 def convert_csv_sqlite(i,o,name,chunksize=4096):
     import sqlite3
     con=sqlite3.connect(o)
@@ -203,26 +168,16 @@ if __name__ == '__main__':
                         default=60)
     parser.add_argument("-o",'--output', type=str,
                         help='Output file. Defaults to "out.csv".',
-                        default='')
-    parser.add_argument('--noupdate', action='store_true',
-                        help='Dont update an existing file - overwrite!.',
-                        )
-    
-    #TODO: SQL-Conversion
-    #parser.add_argument('-convert_to_sql',
-    #                    help="if set all files matched will be converted into one single sqlfile out")
-    #parser.add_argument('-names',default=None,nargs='*',
-    #                    help="specify sql table name, if ommited use the basenames of found files")
+                        default='out.csv')
+    parser.add_argument('-convert_to_sql',
+                        help="if set all files matched will be converted into one single sqlfile out")
+    parser.add_argument('-names',default=None,nargs='*',
+                        help="specify sql table name, if ommited use the basenames of found files")
     args=vars(parser.parse_args())
-    
-    
-    #print args
-    #sys.exit()
-    if not args['output']: args['output']="%s_%d.csv"%(args['pair'],args['duration'])
     print """
     Start downloading of {pair} from {from} to {to}.
     Target TimeFrame = {duration},
     Save to {output}
     """.format(**args)
     
-    download(args['pair'],args['from'],args['to'],args['output'],freq="%ds"%args['duration'],update=not args['noupdate'])
+    download(args['pair'],args['from'],args['to'],args['output'],freq="%ds"%args['duration'])
